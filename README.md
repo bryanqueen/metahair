@@ -2,16 +2,33 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+1. Node.js 18+ installed
+2. MongoDB database (local or MongoDB Atlas)
+
+### Setup
+
+1. Create a `.env.local` file in the root directory:
+
+```bash
+MONGODB_URI=your_mongodb_connection_string_here
+```
+
+Replace `your_mongodb_connection_string_here` with your actual MongoDB URI:
+- Local: `mongodb://localhost:27017/metahair`
+- Atlas: `mongodb+srv://username:password@cluster.mongodb.net/metahair?retryWrites=true&w=majority`
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
