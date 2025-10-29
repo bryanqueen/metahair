@@ -23,7 +23,7 @@ interface OrderConfirmationEmailProps {
     name: string
     quantity: number
     price: number
-    image: string
+    images: string[]
   }>
   subtotal: number
   shipping: number
@@ -49,7 +49,7 @@ export const OrderConfirmationEmail = ({
         {/* Header */}
         <Section style={header}>
           <Img
-            src="https://your-domain.com/metahair_logo_2.png"
+            src="https://metahair.vercel.app/metahair_logo_2.png"
             width="200"
             height="80"
             alt="METAHAIR"
@@ -76,7 +76,7 @@ export const OrderConfirmationEmail = ({
               <Row key={index} style={itemRow}>
                 <Column style={itemImage}>
                   <Img
-                    src={item.image}
+                    src={item.images[0]}
                     width="80"
                     height="80"
                     alt={item.name}
@@ -100,7 +100,7 @@ export const OrderConfirmationEmail = ({
                   <Text style={summaryLabel}>Subtotal:</Text>
                 </Column>
                 <Column style={summaryValue}>
-                  <Text style={summaryText}>${subtotal.toLocaleString()}</Text>
+                  <Text style={summaryText}>₦{subtotal.toLocaleString()}</Text>
                 </Column>
               </Row>
               <Row style={summaryRow}>
@@ -108,7 +108,7 @@ export const OrderConfirmationEmail = ({
                   <Text style={summaryLabel}>Shipping:</Text>
                 </Column>
                 <Column style={summaryValue}>
-                  <Text style={summaryText}>${shipping.toLocaleString()}</Text>
+                  <Text style={summaryText}>₦{shipping.toLocaleString()}</Text>
                 </Column>
               </Row>
               <Hr style={divider} />
@@ -117,7 +117,7 @@ export const OrderConfirmationEmail = ({
                   <Text style={totalLabel}>Total:</Text>
                 </Column>
                 <Column style={summaryValue}>
-                  <Text style={totalText}>${total.toLocaleString()}</Text>
+                  <Text style={totalText}>₦{total.toLocaleString()}</Text>
                 </Column>
               </Row>
             </Section>
@@ -153,7 +153,7 @@ export const OrderConfirmationEmail = ({
         {/* Footer */}
         <Section style={footer}>
           <Text style={footerText}>
-            © 2024 METAHAIR. All rights reserved.
+            © {new Date().getFullYear()} METAHAIR. All rights reserved.
           </Text>
           <Text style={footerText}>
             Slay Beyond Limit

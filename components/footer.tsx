@@ -85,7 +85,7 @@ export function Footer() {
           </div>
 
           {/* Copyright */}
-          <p className="text-gray-500 text-sm font-sans">© 2025 METAHAIR. All rights reserved.</p>
+          <p className="text-gray-500 text-sm font-sans">© {new Date().getFullYear()} METAHAIR. All rights reserved.</p>
 
           {/* Legal Links */}
           <div className="flex items-center gap-6">
