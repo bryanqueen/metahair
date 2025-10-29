@@ -12,6 +12,9 @@ interface Product {
   _id: string
   name: string
   price: number
+  isOnSale?: boolean
+  discountPercent?: number
+  salePrice?: number
   category: {
     _id: string
     name: string
@@ -65,7 +68,10 @@ export default function AdminProductsPage() {
     stock: "",
     description: "",
     images: [] as string[],
-    featured: false
+    featured: false,
+    isOnSale: false,
+    discountPercent: "",
+    salePrice: ""
   })
 
   useEffect(() => {
@@ -112,7 +118,10 @@ export default function AdminProductsPage() {
       stock: "",
       description: "",
       images: [],
-      featured: false
+      featured: false,
+      isOnSale: false,
+      discountPercent: "",
+      salePrice: ""
     })
     setShowProductForm(true)
   }
@@ -150,7 +159,10 @@ export default function AdminProductsPage() {
       stock: product.stock.toString(),
       description: product.description || "",
       images: product.images,
-      featured: product.featured
+      featured: product.featured,
+      isOnSale: !!product.isOnSale,
+      discountPercent: (product.discountPercent ?? "").toString(),
+      salePrice: (product.salePrice ?? "").toString()
     })
     setShowProductForm(true)
   }
@@ -227,8 +239,11 @@ export default function AdminProductsPage() {
               category: "",
               stock: "",
               description: "",
-              images: [],
-              featured: false
+            images: [],
+            featured: false,
+            isOnSale: false,
+            discountPercent: "",
+            salePrice: ""
             })
           }}
           title={editingProduct ? "Edit Product" : "Add New Product"}
@@ -280,6 +295,42 @@ export default function AdminProductsPage() {
                     value={formData.stock}
                     onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                     placeholder="e.g., 10"
+                    className="w-full px-4 py-2 border border-gray-200 font-sans text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Discount Settings */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="isOnSale"
+                    checked={!!formData.isOnSale}
+                    onChange={(e) => setFormData({ ...formData, isOnSale: e.target.checked })}
+                    className="w-4 h-4"
+                  />
+                  <label htmlFor="isOnSale" className="font-sans text-sm">Enable Sale</label>
+                </div>
+                <div>
+                  <label className="block font-sans text-sm mb-2">Discount %</label>
+                  <input
+                    type="number"
+                    value={formData.discountPercent}
+                    onChange={(e) => setFormData({ ...formData, discountPercent: e.target.value })}
+                    placeholder="e.g., 20"
+                    className="w-full px-4 py-2 border border-gray-200 font-sans text-sm"
+                    min="0"
+                    max="100"
+                  />
+                </div>
+                <div>
+                  <label className="block font-sans text-sm mb-2">Sale Price (optional)</label>
+                  <input
+                    type="number"
+                    value={formData.salePrice}
+                    onChange={(e) => setFormData({ ...formData, salePrice: e.target.value })}
+                    placeholder="e.g., 1999"
                     className="w-full px-4 py-2 border border-gray-200 font-sans text-sm"
                   />
                 </div>
@@ -352,14 +403,17 @@ export default function AdminProductsPage() {
                 <Button
                   onClick={async () => {
                     try {
-                      const productData = {
+                      const productData: any = {
                         name: formData.name,
                         price: parseFloat(formData.price),
                         category: formData.category,
                         stock: parseInt(formData.stock),
                         description: formData.description,
                         images: formData.images,
-                        featured: formData.featured
+                        featured: formData.featured,
+                        isOnSale: !!formData.isOnSale,
+                        discountPercent: formData.discountPercent ? parseFloat(formData.discountPercent as any) : 0,
+                        salePrice: formData.salePrice ? parseFloat(formData.salePrice as any) : undefined,
                       }
 
                       if (editingProduct) {
@@ -396,7 +450,10 @@ export default function AdminProductsPage() {
                         stock: "",
                         description: "",
                         images: [],
-                        featured: false
+                        featured: false,
+                        isOnSale: false,
+                        discountPercent: "",
+                        salePrice: ""
                       })
                     } catch (error) {
                       console.error('Error saving product:', error)
@@ -418,7 +475,10 @@ export default function AdminProductsPage() {
                       stock: "",
                       description: "",
                       images: [],
-                      featured: false
+                      featured: false,
+                      isOnSale: false,
+                      discountPercent: "",
+                      salePrice: ""
                     })
                   }}
                   variant="outline"

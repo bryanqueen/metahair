@@ -28,7 +28,7 @@ interface ShippingMethod {
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { cartItems } = useCart()
+  const { cartItems, clearCart } = useCart()
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -43,6 +43,7 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [selectedShipping, setSelectedShipping] = useState("")
   const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([])
+  const [notice, setNotice] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
 
   useEffect(() => {
     const fetchShippingMethods = async () => {
@@ -51,7 +52,8 @@ export default function CheckoutPage() {
         const data = await response.json()
         if (Array.isArray(data) && data.length > 0) {
           setShippingMethods(data)
-          setSelectedShipping(data[0]._id)
+          const saved = typeof window !== 'undefined' ? localStorage.getItem('selected_shipping_method') : null
+          setSelectedShipping(saved || data[0]._id)
         }
       } catch (error) {
         console.error('Error fetching shipping methods:', error)
@@ -67,25 +69,33 @@ export default function CheckoutPage() {
 
   const handlePaystackPayment = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+    setNotice(null)
     if (!window.PaystackPop) {
-      alert("Paystack is not loaded. Please check your internet connection.")
+      setNotice({ type: 'error', message: 'Paystack is not loaded. Please check your internet connection.' })
       return
     }
 
     setIsProcessing(true)
 
     try {
-      // Create order
+      // Build order payload
+      const orderPayload = {
+        customerName: `${formData.firstName} ${formData.lastName}`.trim(),
+        customerEmail: formData.email,
+        customerPhone: formData.phone,
+        shippingAddress: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}`,
+        items: cartItems.map((i) => ({ productId: i.id, productName: i.name, quantity: i.quantity, price: i.price })),
+        shippingMethod: shippingMethods.find((m) => m._id === selectedShipping)?.name || '',
+        shippingCost: shippingMethods.find((m) => m._id === selectedShipping)?.price || 0,
+        subtotal,
+        total,
+      }
+
+      // Create pending order
       const orderResponse = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerInfo: formData,
-          items: cartItems,
-          shipping: selectedShipping,
-          shippingMethods,
-        }),
+        body: JSON.stringify(orderPayload),
       })
 
       if (!orderResponse.ok) {
@@ -94,11 +104,19 @@ export default function CheckoutPage() {
 
       const order = await orderResponse.json()
       
+      const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+      if (!publicKey) {
+        setNotice({ type: 'error', message: 'Paystack key not configured.' })
+        return
+      }
+
+      const amountInKobo = Math.round(total * 100)
+
       // Initialize Paystack payment
       const handler = window.PaystackPop.setup({
-        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_xxxxx', // Replace with your public key
+        key: publicKey,
         email: formData.email,
-        amount: total * 100, // Convert to kobo
+        amount: amountInKobo,
         currency: 'NGN',
         ref: `METAHAIR_${Date.now()}`,
         metadata: {
@@ -106,19 +124,35 @@ export default function CheckoutPage() {
           customer_name: `${formData.firstName} ${formData.lastName}`,
         },
         callback: function(response: any) {
-          // Payment successful
-          alert('Payment successful!')
-          router.push('/')
+          (async () => {
+            try {
+              const verifyRes = await fetch('/api/paystack/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reference: response.reference, orderId: order._id, customerEmail: formData.email, customerName: `${formData.firstName} ${formData.lastName}` })
+              })
+              if (verifyRes.ok) {
+                clearCart()
+                const verified = await verifyRes.json()
+                const oid = verified?.order?._id || order._id
+                router.push(`/checkout/success?orderId=${oid}`)
+              } else {
+                setNotice({ type: 'error', message: 'Payment verification failed. Please contact support.' })
+              }
+            } catch (err) {
+              setNotice({ type: 'error', message: 'Payment verification error.' })
+            }
+          })()
         },
         onClose: function() {
-          alert('Payment window closed')
+          setNotice({ type: 'info', message: 'Payment window closed.' })
         },
       })
 
       handler.openIframe()
     } catch (error) {
       console.error('Payment error:', error)
-      alert('Something went wrong. Please try again.')
+      setNotice({ type: 'error', message: 'Something went wrong. Please try again.' })
     } finally {
       setIsProcessing(false)
     }
@@ -247,7 +281,12 @@ export default function CheckoutPage() {
                         name="shipping"
                         value={method._id}
                         checked={selectedShipping === method._id}
-                        onChange={(e) => setSelectedShipping(e.target.value)}
+                        onChange={(e) => {
+                          setSelectedShipping(e.target.value)
+                          if (typeof window !== 'undefined') {
+                            localStorage.setItem('selected_shipping_method', e.target.value)
+                          }
+                        }}
                         className="w-4 h-4"
                       />
                       <div className="flex-1">
@@ -305,6 +344,12 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      {notice && (
+        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-3 rounded shadow ${notice.type === 'success' ? 'bg-green-600 text-white' : notice.type === 'error' ? 'bg-red-600 text-white' : 'bg-gray-800 text-white'}`}>
+          <span className="font-sans text-sm">{notice.message}</span>
+        </div>
+      )}
 
       <Footer />
     </div>

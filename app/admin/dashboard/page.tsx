@@ -5,7 +5,7 @@ import { useAdmin } from "@/lib/admin-context"
 import { Button } from "@/components/ui/button"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { Modal } from "@/components/ui/modal"
-import { LogOut, Plus, Edit2, Trash2, Settings } from "lucide-react"
+import { LogOut, Plus, Edit2, Trash2, Settings, Copy, Check } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
@@ -19,6 +19,11 @@ export default function AdminDashboard() {
   const router = useRouter()
   const { logout } = useAdmin()
   const [categories, setCategories] = useState<Category[]>([])
+  const [orders, setOrders] = useState<any[]>([])
+  const [orderStatusFilter, setOrderStatusFilter] = useState<'processing' | 'shipped' | 'delivered' | 'cancelled'>('processing')
+  const [selectedOrder, setSelectedOrder] = useState<any>(null)
+  const [showOrderModal, setShowOrderModal] = useState(false)
+  const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<"orders" | "categories" | "shipping" | "products" | "settings">("orders")
@@ -60,8 +65,37 @@ export default function AdminDashboard() {
       }
     }
 
+    const fetchOrders = async () => {
+      try {
+        const res = await fetch('/api/orders?limit=100')
+        if (res.ok) {
+          const data = await res.json()
+          const list = (data.orders || []) as any[]
+          // hide unpaid/pending orders by default
+          const nonPending = list.filter(o => (o.paymentStatus !== 'pending') && (o.status !== 'pending'))
+          setOrders(nonPending)
+        }
+      } catch (e) {}
+    }
+
     fetchCategories()
+    fetchOrders()
   }, [])
+
+  useEffect(() => {
+    if (showOrderModal && selectedOrder?._id) {
+      const fetchFullOrder = async () => {
+        try {
+          const res = await fetch(`/api/orders/${selectedOrder._id}`)
+          if (res.ok) {
+            const fullOrder = await res.json()
+            setSelectedOrder(fullOrder)
+          }
+        } catch (e) {}
+      }
+      fetchFullOrder()
+    }
+  }, [showOrderModal, selectedOrder?._id])
 
   const handleLogout = () => {
     logout()
@@ -193,23 +227,71 @@ export default function AdminDashboard() {
           <div>
             <h2 className="font-serif text-2xl mb-6">Order Management</h2>
             <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <h3 className="font-serif text-lg mb-2">No Orders Yet</h3>
-                <p className="text-gray-600 font-sans text-sm mb-4">Orders will appear here once customers start placing them.</p>
-                <div className="flex gap-4 justify-center">
-                  <Button className="bg-black text-white hover:bg-[#D4A574] hover:text-black font-sans">
-                    View All Orders
-                  </Button>
-                  <Button variant="outline" className="font-sans">
-                    Export Orders
-                  </Button>
-                </div>
+              {/* Filters */}
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                {[{id:'processing',label:'Processing'},{id:'shipped',label:'Shipped'},{id:'delivered',label:'Delivered'},{id:'cancelled',label:'Cancelled'}].map((f:any) => (
+                  <button key={f.id} onClick={() => setOrderStatusFilter(f.id)} className={`px-3 py-1 border text-xs font-sans ${orderStatusFilter===f.id ? 'bg-black text-white' : 'bg-white text-gray-700'}`}>{f.label}</button>
+                ))}
               </div>
+              {orders.length === 0 ? (
+                <div className="text-center py-12">
+                  <h3 className="font-serif text-lg mb-2">No Orders Yet</h3>
+                  <p className="text-gray-600 font-sans text-sm mb-4">Orders will appear here once customers start placing them.</p>
+                </div>
+              ) : (
+                <>
+                  {/* Mobile Cards */}
+                  <div className="grid grid-cols-1 gap-3 md:hidden">
+                    {orders.filter(o => o.status===orderStatusFilter).map((o) => (
+                      <div key={o._id} className="border border-gray-200 rounded p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-mono text-xs truncate max-w-[60%]">{o.orderNumber}</span>
+                          <span className="text-xs capitalize px-2 py-0.5 border">{o.status}</span>
+                        </div>
+                        <div className="text-sm text-gray-700 truncate">{o.customerName || '-'}</div>
+                        <div className="text-sm mt-1">₦{o.total?.toLocaleString?.()}</div>
+                        <div className="text-xs text-gray-500 mt-1 truncate">{new Date(o.createdAt).toLocaleString()}</div>
+                        <Button onClick={() => { setSelectedOrder(o); setShowOrderModal(true) }} className="w-full mt-3 bg-black text-white hover:bg-[#D4A574] hover:text-black font-sans text-xs">
+                          View Details
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Desktop Table */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-gray-600 border-b border-gray-200">
+                          <th className="py-3">Order #</th>
+                          <th className="py-3">Customer</th>
+                          <th className="py-3">Total</th>
+                          <th className="py-3">Status</th>
+                          <th className="py-3">Date</th>
+                          <th className="py-3">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {orders.filter(o => o.status===orderStatusFilter).map((o) => (
+                          <tr key={o._id} className="border-b border-gray-100">
+                            <td className="py-3 font-mono max-w-[180px] truncate">{o.orderNumber}</td>
+                            <td className="py-3 max-w-[220px] truncate">{o.customerName || '-'}</td>
+                            <td className="py-3">₦{o.total?.toLocaleString?.()}</td>
+                            <td className="py-3 capitalize">
+                              <span className="px-2 py-0.5 border text-xs">{o.status}</span>
+                            </td>
+                            <td className="py-3 whitespace-nowrap">{new Date(o.createdAt).toLocaleString()}</td>
+                            <td className="py-3">
+                              <Button onClick={() => { setSelectedOrder(o); setShowOrderModal(true) }} className="bg-black text-white hover:bg-[#D4A574] hover:text-black font-sans text-xs">
+                                View Details
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -389,12 +471,129 @@ export default function AdminDashboard() {
             <Link href="/admin/settings">
               <Button className="bg-black text-white hover:bg-[#D4A574] hover:text-black font-sans flex items-center gap-2">
                 <Settings className="w-4 h-4" />
-                Change PIN
+                Change PIN / Update Email Address
               </Button>
             </Link>
           </div>
         )}
       </div>
+
+      {/* Order Details Modal */}
+      {showOrderModal && selectedOrder && (
+        <Modal
+          isOpen={showOrderModal}
+          onClose={() => {
+            setShowOrderModal(false)
+            setSelectedOrder(null)
+            setCopied(false)
+          }}
+          title={`Order ${selectedOrder.orderNumber}`}
+        >
+          <div className="space-y-4">
+            {/* Order Info */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-gray-500 font-sans mb-1">Customer Name</p>
+                <p className="font-sans">{selectedOrder.customerName || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 font-sans mb-1">Customer Email</p>
+                <p className="font-sans text-sm truncate">{selectedOrder.customerEmail || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 font-sans mb-1">Phone</p>
+                <p className="font-sans">{selectedOrder.customerPhone || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 font-sans mb-1">Date</p>
+                <p className="font-sans text-sm">{new Date(selectedOrder.createdAt).toLocaleString()}</p>
+              </div>
+            </div>
+
+            {/* Shipping Address */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-gray-500 font-sans">Shipping Address</p>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(selectedOrder.shippingAddress || '')
+                    setCopied(true)
+                    setTimeout(() => setCopied(false), 2000)
+                  }}
+                  className="flex items-center gap-1 text-xs text-gray-600 hover:text-black font-sans"
+                >
+                  {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+              <p className="font-sans text-sm bg-gray-50 p-3 rounded border">{selectedOrder.shippingAddress || '-'}</p>
+            </div>
+
+            {/* Order Items */}
+            <div>
+              <p className="text-xs text-gray-500 font-sans mb-2">Items</p>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {selectedOrder.items?.map((item: any, idx: number) => (
+                  <div key={idx} className="flex justify-between items-center border-b pb-2">
+                    <div>
+                      <p className="font-sans text-sm">{item.productName}</p>
+                      <p className="font-sans text-xs text-gray-500">Qty: {item.quantity}</p>
+                    </div>
+                    <p className="font-sans text-sm">₦{(item.price * item.quantity).toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Order Summary */}
+            <div className="border-t pt-4 space-y-2">
+              <div className="flex justify-between font-sans text-sm">
+                <span>Subtotal</span>
+                <span>₦{selectedOrder.subtotal?.toLocaleString() || '0'}</span>
+              </div>
+              <div className="flex justify-between font-sans text-sm">
+                <span>Shipping</span>
+                <span>₦{selectedOrder.shippingCost?.toLocaleString() || '0'}</span>
+              </div>
+              <div className="flex justify-between font-serif font-semibold border-t pt-2">
+                <span>Total</span>
+                <span>₦{selectedOrder.total?.toLocaleString() || '0'}</span>
+              </div>
+            </div>
+
+            {/* Status Update */}
+            <div className="border-t pt-4">
+              <p className="text-xs text-gray-500 font-sans mb-3">Update Status</p>
+              <div className="flex flex-wrap gap-2">
+                {['processing', 'shipped', 'delivered', 'cancelled'].map((status) => (
+                  <button
+                    key={status}
+                    onClick={async () => {
+                      const res = await fetch(`/api/orders/${selectedOrder._id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status })
+                      })
+                      if (res.ok) {
+                        const updated = await res.json()
+                        setSelectedOrder(updated)
+                        setOrders(prev => prev.map(o => o._id === selectedOrder._id ? updated : o))
+                      }
+                    }}
+                    className={`px-3 py-1.5 text-xs border font-sans capitalize ${
+                      selectedOrder.status === status
+                        ? 'bg-black text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {status}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (

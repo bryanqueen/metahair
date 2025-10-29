@@ -45,6 +45,11 @@ export async function POST(request: NextRequest) {
       images: data.images,
       stock: data.stock,
       featured: data.featured,
+      isOnSale: !!data.isOnSale,
+      discountPercent: data.discountPercent || 0,
+      salePrice: data.salePrice,
+      saleStart: data.saleStart,
+      saleEnd: data.saleEnd,
     })
 
     await product.save()

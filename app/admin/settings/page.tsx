@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { useAdmin } from "@/lib/admin-context"
@@ -17,6 +17,26 @@ export default function AdminSettingsPage() {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+
+  // Admin email state
+  const [adminEmail, setAdminEmail] = useState("")
+  const [emailError, setEmailError] = useState("")
+  const [emailSuccess, setEmailSuccess] = useState("")
+  const [isEmailLoading, setIsEmailLoading] = useState(false)
+
+  // Load admin email on mount
+  useEffect(() => {
+    const loadAdminEmail = async () => {
+      try {
+        const response = await fetch('/api/admin/session', { credentials: 'include' })
+        if (response.ok) {
+          const data = await response.json()
+          if (data.adminEmail) setAdminEmail(data.adminEmail)
+        }
+      } catch (err) {}
+    }
+    loadAdminEmail()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,6 +74,36 @@ export default function AdminSettingsPage() {
     }
   }
 
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setEmailError("")
+    setEmailSuccess("")
+
+    if (!adminEmail || !adminEmail.includes('@')) {
+      setEmailError("Please enter a valid email address")
+      return
+    }
+
+    setIsEmailLoading(true)
+    try {
+      const response = await fetch('/api/admin/update-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ adminEmail })
+      })
+      if (response.ok) {
+        setEmailSuccess("Admin email updated successfully!")
+      } else {
+        setEmailError("Failed to update email. Please try again.")
+      }
+    } catch (err) {
+      setEmailError("Failed to update email. Please try again.")
+    } finally {
+      setIsEmailLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -72,7 +122,7 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 md:px-8 py-8">
-        <div className="bg-white border border-gray-200 rounded-lg p-8">
+        <div className="bg-white border border-gray-200 rounded-lg p-8 mb-8">
           <h2 className="font-serif text-2xl mb-6">Change Admin PIN</h2>
           
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -162,6 +212,39 @@ export default function AdminSettingsPage() {
               Keep your PIN secure and don't share it with anyone.
             </p>
           </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-lg p-8">
+          <h2 className="font-serif text-2xl mb-6">Admin Email Configuration</h2>
+          <form onSubmit={handleEmailSubmit} className="space-y-6">
+            <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded font-sans text-sm mb-6">
+              This email will receive order notifications and confirmations.
+            </div>
+            <div>
+              <label className="block font-sans text-sm mb-2">Admin Email</label>
+              <input
+                type="email"
+                value={adminEmail}
+                onChange={(e) => { setAdminEmail(e.target.value); setEmailError("") }}
+                placeholder="Enter admin email address"
+                className="w-full px-4 py-3 border border-gray-200 font-sans"
+                required
+              />
+            </div>
+            {emailError && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded font-sans text-sm">{emailError}</div>
+            )}
+            {emailSuccess && (
+              <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded font-sans text-sm">{emailSuccess}</div>
+            )}
+            <Button
+              type="submit"
+              disabled={isEmailLoading || !adminEmail}
+              className="w-full bg-black text-white hover:bg-[#D4A574] hover:text-black font-sans py-3"
+            >
+              {isEmailLoading ? "Updating Email..." : "Update Email"}
+            </Button>
+          </form>
         </div>
       </div>
     </div>

@@ -44,22 +44,13 @@ export async function POST(request: NextRequest) {
       shippingCost: data.shippingCost,
       subtotal: data.subtotal,
       total: data.total,
-      paymentReference: data.paymentReference,
+      status: "pending",
+      paymentStatus: "pending",
     })
 
     await order.save()
 
-    // Send confirmation emails
-    const adminEmail = process.env.ADMIN_EMAIL || "admin@metahair.com"
-
-    await sendOrderConfirmation(data.customerEmail, adminEmail, {
-      orderNumber,
-      customerName: data.customerName,
-      items: data.items,
-      total: data.total,
-      shippingMethod: data.shippingMethod,
-    })
-
+    // Do NOT send emails here; only after payment verification
     return NextResponse.json(order, { status: 201 })
   } catch (error) {
     console.error(error)

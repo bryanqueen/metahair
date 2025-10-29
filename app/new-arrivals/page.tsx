@@ -14,6 +14,9 @@ interface Product {
   _id: string
   name: string
   price: number
+  isOnSale?: boolean
+  discountPercent?: number
+  salePrice?: number
   category: {
     _id: string
     name: string
@@ -50,6 +53,16 @@ export default function NewArrivalsPage() {
     fetchNewArrivals()
   }, [])
 
+  const effectivePrice = (p: Product) => {
+    if (p?.isOnSale) {
+      if (typeof p.salePrice === 'number' && p.salePrice > 0) return p.salePrice
+      if (typeof p.discountPercent === 'number' && p.discountPercent > 0) {
+        return Math.max(0, Math.round(p.price * (1 - p.discountPercent / 100)))
+      }
+    }
+    return p.price
+  }
+
   const handleAddToCart = (e: React.MouseEvent, product: Product) => {
     e.preventDefault()
     const button = e.currentTarget as HTMLElement
@@ -60,7 +73,7 @@ export default function NewArrivalsPage() {
     addToCart({
       id: product._id,
       name: product.name,
-      price: product.price,
+      price: effectivePrice(product),
       quantity: 1,
       image: product.images[0] || "/placeholder.svg",
     })
@@ -122,7 +135,17 @@ export default function NewArrivalsPage() {
                 <div className="space-y-2">
                   <p className="text-xs text-gray-500 uppercase tracking-wider font-sans">{product.category.name}</p>
                   <h3 className="font-serif text-base md:text-lg">{product.name}</h3>
-                  <p className="font-sans text-sm md:text-base">₦{product.price.toLocaleString()}</p>
+                  {product.isOnSale ? (
+                    <div className="flex items-center gap-2">
+                      <span className="font-sans text-sm md:text-base font-semibold">₦{effectivePrice(product).toLocaleString()}</span>
+                      <span className="font-sans text-xs md:text-sm text-gray-500 line-through">₦{product.price.toLocaleString()}</span>
+                      {product.discountPercent ? (
+                        <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5">-{product.discountPercent}%</span>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <p className="font-sans text-sm md:text-base">₦{product.price.toLocaleString()}</p>
+                  )}
                 </div>
               </Link>
               <Button

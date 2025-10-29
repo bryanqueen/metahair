@@ -26,7 +26,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params
     const data = await request.json()
 
-    const product = await Product.findByIdAndUpdate(id, data, { new: true }).populate("category")
+    const update: any = {
+      ...data,
+    }
+
+    const product = await Product.findByIdAndUpdate(id, update, { new: true }).populate("category")
 
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 })

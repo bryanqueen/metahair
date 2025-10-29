@@ -134,7 +134,7 @@ export function Navbar() {
                       <img
                         src={categories[currentCategoryIndex]?.image || "/placeholder.svg"}
                         alt={categories[currentCategoryIndex]?.name}
-                        className="w-full object-cover transition-opacity duration-500"
+                        className="w-full h-100 object-cover transition-opacity duration-500"
                       />
                     </div>
                   </div>

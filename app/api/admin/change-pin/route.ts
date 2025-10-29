@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
-
-// In a real app, you'd store this in a database
-let ADMIN_PIN = "123456"
+import { connectDB } from "@/lib/db"
+import { AdminSettings } from "@/models/admin-settings"
 
 export async function POST(request: NextRequest) {
   try {
+    await connectDB()
     const { newPin } = await request.json()
 
     // Check if user is authenticated
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       }, { status: 401 })
     }
 
-    // Validate new PIN (no need to verify old PIN if already authenticated)
+    // Validate new PIN
     if (newPin.length !== 6 || !/^\d+$/.test(newPin)) {
       return NextResponse.json({ 
         success: false, 
@@ -27,15 +27,28 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Update PIN
-    ADMIN_PIN = newPin
+    // Update PIN in database
+    let adminSettings = await AdminSettings.findOne()
+    
+    if (!adminSettings) {
+      // Create new admin settings if none exist
+      adminSettings = new AdminSettings({
+        adminEmail: "admin@metahair.com",
+        adminPin: newPin
+      })
+    } else {
+      adminSettings.adminPin = newPin
+    }
+    
+    await adminSettings.save()
 
     return NextResponse.json({ 
       success: true, 
-      pin: ADMIN_PIN,
+      pin: adminSettings.adminPin,
       message: "PIN changed successfully" 
     })
   } catch (error) {
+    console.error('Change PIN error:', error)
     return NextResponse.json({ 
       success: false, 
       message: "Failed to change PIN" 

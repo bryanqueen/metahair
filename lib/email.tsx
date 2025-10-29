@@ -1,4 +1,6 @@
 import { Resend } from "resend"
+import { render } from "@react-email/render"
+import OrderConfirmationEmail from "./email-templates/order-confirmation"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -8,45 +10,44 @@ export async function sendOrderConfirmation(
   orderData: {
     orderNumber: string
     customerName: string
-    items: Array<{ productName: string; quantity: number; price: number }>
+    customerEmail?: string
+    items: Array<{ productName: string; quantity: number; price: number; image?: string }>
+    subtotal?: number
+    shippingCost?: number
     total: number
-    shippingMethod: string
+    shippingMethod?: string
+    shippingAddress?: string
   },
 ) {
-  // Send to customer
+  const emailHtml = render(
+    OrderConfirmationEmail({
+      orderNumber: orderData.orderNumber,
+      customerName: orderData.customerName,
+      customerEmail: orderData.customerEmail || customerEmail,
+      items: orderData.items.map((i) => ({
+        name: i.productName,
+        quantity: i.quantity,
+        price: i.price,
+        image: i.image || `${process.env.NEXT_PUBLIC_APP_URL}/metahair_logo_2.png`
+      })),
+      subtotal: orderData.subtotal ?? Math.max(0, orderData.total - (orderData.shippingCost || 0)),
+      shipping: orderData.shippingCost || 0,
+      total: orderData.total,
+      shippingAddress: orderData.shippingAddress || "",
+    })
+  )
+
   await resend.emails.send({
-    from: "orders@metahair.com",
+    from: "orders@metahair.store",
     to: customerEmail,
     subject: `Order Confirmation - ${orderData.orderNumber}`,
-    html: `
-      <h2>Thank you for your order!</h2>
-      <p>Order Number: ${orderData.orderNumber}</p>
-      <h3>Order Summary:</h3>
-      <ul>
-        ${orderData.items.map((item) => `<li>${item.productName} x${item.quantity} - ₦${item.price}</li>`).join("")}
-      </ul>
-      <p><strong>Total: ₦${orderData.total}</strong></p>
-      <p>Shipping Method: ${orderData.shippingMethod}</p>
-    `,
-  })
+    html: await emailHtml,
+  }) as any
 
-  // Send to admin
   await resend.emails.send({
-    from: "orders@metahair.com",
+    from: "orders@metahair.store",
     to: adminEmail,
     subject: `New Order - ${orderData.orderNumber}`,
-    html: `
-      <h2>New Order Received</h2>
-      <p>Customer: ${orderData.customerName}</p>
-      <p>Email: ${customerEmail}</p>
-      <p>Order Number: ${orderData.orderNumber}</p>
-      <h3>Order Summary:</h3>
-      <ul>
-        ${orderData.items.map((item) => `<li>${item.productName} x${item.quantity} - ₦${item.price}</li>`).join("")}
-      </ul>
-      <p><strong>Total: ₦${orderData.total}</strong></p>
-      <p>Shipping Method: ${orderData.shippingMethod}</p>
-      <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/dashboard">View Order in Dashboard</a></p>
-    `,
-  })
+    html: await emailHtml,
+  }) as any
 }

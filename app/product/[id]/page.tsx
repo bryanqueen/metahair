@@ -15,6 +15,9 @@ interface Product {
   _id: string
   name: string
   price: number
+  isOnSale?: boolean
+  discountPercent?: number
+  salePrice?: number
   category: {
     _id: string
     name: string
@@ -114,6 +117,16 @@ export default function ProductPage() {
     setQuantity(newQuantity)
   }
 
+  const effectivePrice = (p: Product) => {
+    if (p?.isOnSale) {
+      if (typeof p.salePrice === 'number' && p.salePrice > 0) return p.salePrice
+      if (typeof p.discountPercent === 'number' && p.discountPercent > 0) {
+        return Math.max(0, Math.round(p.price * (1 - p.discountPercent / 100)))
+      }
+    }
+    return p.price
+  }
+
   const handleAddToCart = (e: React.MouseEvent) => {
     if (quantity > product.stock) {
       setError(`Only ${product.stock} items available in stock`)
@@ -128,7 +141,7 @@ export default function ProductPage() {
     addToCart({
       id: product._id,
       name: product.name,
-      price: product.price,
+      price: effectivePrice(product),
       quantity,
       image: product.images[0] || "/placeholder.svg",
     })
@@ -138,7 +151,7 @@ export default function ProductPage() {
   }
 
   const whatsappMessage = encodeURIComponent(
-    `Hi, I'm interested in the ${product.name} (₦${product.price.toLocaleString()}). Can you provide more details?`,
+    `Hi, I'm interested in the ${product.name} (₦${effectivePrice(product).toLocaleString()}). Can you provide more details?`,
   )
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -276,7 +289,17 @@ export default function ProductPage() {
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wider font-sans mb-2">{product.category.name}</p>
             <h1 className="font-serif text-3xl md:text-4xl mb-4">{product.name}</h1>
-            <p className="font-sans text-2xl md:text-3xl mb-6">₦{product.price.toLocaleString()}</p>
+            {product.isOnSale ? (
+              <div className="mb-6 flex items-end gap-3">
+                <span className="font-sans text-2xl md:text-3xl font-semibold">₦{effectivePrice(product).toLocaleString()}</span>
+                <span className="font-sans text-lg md:text-xl text-gray-500 line-through">₦{product.price.toLocaleString()}</span>
+                {product.discountPercent ? (
+                  <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5">-{product.discountPercent}%</span>
+                ) : null}
+              </div>
+            ) : (
+              <p className="font-sans text-2xl md:text-3xl mb-6">₦{product.price.toLocaleString()}</p>
+            )}
 
             <div className="border-t border-b border-gray-200 py-6 mb-6">
               <p className="font-sans text-sm md:text-base text-gray-700 leading-relaxed">{product.description}</p>

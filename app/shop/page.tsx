@@ -16,6 +16,9 @@ interface Product {
   _id: string
   name: string
   price: number
+  isOnSale?: boolean
+  discountPercent?: number
+  salePrice?: number
   category: {
     _id: string
     name: string
@@ -86,6 +89,16 @@ function ShopContent() {
     setCurrentPage(1)
   }, [selectedCategory])
 
+  const effectivePrice = (p: Product) => {
+    if (p?.isOnSale) {
+      if (typeof p.salePrice === 'number' && p.salePrice > 0) return p.salePrice
+      if (typeof p.discountPercent === 'number' && p.discountPercent > 0) {
+        return Math.max(0, Math.round(p.price * (1 - p.discountPercent / 100)))
+      }
+    }
+    return p.price
+  }
+
   const handleAddToCart = (e: React.MouseEvent, product: Product) => {
     e.preventDefault()
     const button = e.currentTarget as HTMLElement
@@ -96,7 +109,7 @@ function ShopContent() {
     addToCart({
       id: product._id,
       name: product.name,
-      price: product.price,
+      price: effectivePrice(product),
       quantity: 1,
       image: product.images[0] || "/placeholder.svg",
     })
@@ -123,57 +136,48 @@ function ShopContent() {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-12">
-        <div className="sticky top-20 md:top-32 bg-white z-40 pb-4 md:pb-6 mb-6 md:mb-8">
-          <h1 className="font-serif text-2xl md:text-4xl lg:text-5xl mb-2 md:mb-3">Shop All Wigs</h1>
-          <p className="text-gray-600 font-sans text-xs md:text-sm">
-            Showing {products.length} {products.length === 1 ? "product" : "products"}
-          </p>
-        </div>
-
-        <div className="flex flex-col lg:flex-row gap-6 md:gap-8">
-          {/* Filters Sidebar */}
-          <aside className="lg:w-64 flex-shrink-0">
-            {/* Mobile Filter Toggle */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="lg:hidden w-full flex items-center justify-between p-4 border border-gray-200 mb-4"
-            >
-              <span className="font-sans flex items-center gap-2 text-sm">
-                <SlidersHorizontal className="w-4 h-4" />
-                Filters
-              </span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? "rotate-180" : ""}`} />
-            </button>
-
-            <div className={`space-y-6 md:space-y-8 ${showFilters ? "block" : "hidden lg:block"}`}>
-              <div>
-                <h3 className="font-serif text-base md:text-lg mb-3 md:mb-4">Categories</h3>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => setSelectedCategory("all")}
-                    className={`block w-full text-left px-3 md:px-4 py-2 font-sans text-xs md:text-sm transition-colors ${
-                      selectedCategory === "all" ? "bg-black text-white" : "hover:bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    All Products
-                  </button>
-                  {categories.map((category) => (
-                    <button
-                      key={category._id}
-                      onClick={() => setSelectedCategory(category._id)}
-                      className={`block w-full text-left px-3 md:px-4 py-2 font-sans text-xs md:text-sm transition-colors ${
-                        selectedCategory === category._id ? "bg-black text-white" : "hover:bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {category.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
+      {/* Floating subheader with category chips */}
+      <div className="fixed left-0 right-0 top-[64px] md:top-[120px] lg:top-[130px] bg-white z-40 border-b">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 md:py-4">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h1 className="font-serif text-2xl md:text-4xl lg:text-5xl">Shop All Wigs</h1>
+              <p className="text-gray-600 font-sans text-xs md:text-sm">
+                Showing {products.length} {products.length === 1 ? "product" : "products"}
+              </p>
             </div>
-          </aside>
+          </div>
+          {/* Horizontal category chips */}
+          <div className="mt-3 flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            <button
+              onClick={() => setSelectedCategory("all")}
+              className={`px-3 py-1.5 rounded-full border text-xs whitespace-nowrap ${
+                selectedCategory === "all" ? "bg-black text-white border-black" : "bg-white text-gray-700"
+              }`}
+            >
+              All
+            </button>
+            {categories.map((c) => (
+              <button
+                key={c._id}
+                onClick={() => setSelectedCategory(c._id)}
+                className={`px-3 py-1.5 rounded-full border text-xs whitespace-nowrap ${
+                  selectedCategory === c._id ? "bg-black text-white border-black" : "bg-white text-gray-700"
+                }`}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
+      {/* Spacer for fixed header and chips */}
+      <div className="h-[154px] md:h-[176px]"></div>
+
+      <div className="max-w-7xl mx-auto px-4 md:px-8 pb-8 md:pb-12">
+
+        <div className="flex flex-col gap-6 md:gap-8">
           {/* Products Grid */}
           <div className="flex-1">
             {loading ? (
@@ -201,7 +205,17 @@ function ShopContent() {
                         <div className="space-y-2">
                           <p className="text-xs text-gray-500 uppercase tracking-wider font-sans">{product.category.name}</p>
                           <h3 className="font-serif text-base md:text-lg">{product.name}</h3>
-                          <p className="font-sans text-sm md:text-base">₦{product.price.toLocaleString()}</p>
+                          {product.isOnSale ? (
+                            <div className="flex items-center gap-2">
+                              <span className="font-sans text-sm md:text-base font-semibold">₦{effectivePrice(product).toLocaleString()}</span>
+                              <span className="font-sans text-xs md:text-sm text-gray-500 line-through">₦{product.price.toLocaleString()}</span>
+                              {product.discountPercent ? (
+                                <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5">-{product.discountPercent}%</span>
+                              ) : null}
+                            </div>
+                          ) : (
+                            <p className="font-sans text-sm md:text-base">₦{product.price.toLocaleString()}</p>
+                          )}
                         </div>
                       </Link>
                       <Button

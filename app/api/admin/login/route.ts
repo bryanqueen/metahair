@@ -1,14 +1,26 @@
 import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
-
-// In a real app, you'd store this in a database
-const ADMIN_PIN = "123456"
+import { connectDB } from "@/lib/db"
+import { AdminSettings } from "@/models/admin-settings"
 
 export async function POST(request: NextRequest) {
   try {
+    await connectDB()
     const { pin } = await request.json()
 
-    if (pin === ADMIN_PIN) {
+    // Get admin settings from database
+    let adminSettings = await AdminSettings.findOne()
+    
+    // If no admin settings exist, create default one
+    if (!adminSettings) {
+      adminSettings = new AdminSettings({
+        adminEmail: "admin@metahair.com",
+        adminPin: "123456"
+      })
+      await adminSettings.save()
+    }
+
+    if (pin === adminSettings.adminPin) {
       // Set session cookie
       const cookieStore = await cookies()
       cookieStore.set('admin-session', 'authenticated', {
@@ -20,7 +32,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ 
         success: true, 
-        pin: ADMIN_PIN,
+        pin: adminSettings.adminPin,
         message: "Login successful" 
       })
     }
@@ -30,6 +42,7 @@ export async function POST(request: NextRequest) {
       message: "Invalid PIN" 
     }, { status: 401 })
   } catch (error) {
+    console.error('Login error:', error)
     return NextResponse.json({ 
       success: false, 
       message: "Login failed" 

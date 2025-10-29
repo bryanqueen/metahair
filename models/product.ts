@@ -31,6 +31,25 @@ const productSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    isOnSale: {
+      type: Boolean,
+      default: false,
+    },
+    discountPercent: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+    salePrice: {
+      type: Number,
+    },
+    saleStart: {
+      type: Date,
+    },
+    saleEnd: {
+      type: Date,
+    },
   },
   { timestamps: true },
 )

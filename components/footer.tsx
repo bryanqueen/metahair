@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { Instagram, Facebook, Twitter } from "lucide-react"
+import { Instagram } from "lucide-react"
 
 export function Footer() {
   return (
@@ -74,14 +74,13 @@ export function Footer() {
         <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Social Media */}
           <div className="flex items-center gap-6">
-            <a href="#" className="text-gray-400 hover:text-[#D4A574] transition-colors" aria-label="Instagram">
+            <a href="https://www.instagram.com/metaluxuryhair?igsh=ZngwdzJ0dmVieXlm" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#D4A574] transition-colors" aria-label="Instagram">
               <Instagram className="w-5 h-5" />
             </a>
-            <a href="#" className="text-gray-400 hover:text-[#D4A574] transition-colors" aria-label="Facebook">
-              <Facebook className="w-5 h-5" />
-            </a>
-            <a href="#" className="text-gray-400 hover:text-[#D4A574] transition-colors" aria-label="Twitter">
-              <Twitter className="w-5 h-5" />
+            <a href="https://www.tiktok.com/@metaluxuryhair?_t=ZS-90xHWtu4Iz4&_r=1" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#D4A574] transition-colors" aria-label="TikTok">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="currentColor" className="w-5 h-5">
+                <path d="M30 4h5a12 12 0 0 0 9 9v5a17 17 0 0 1-9-3v14.5A11.5 11.5 0 1 1 23.5 18h0v5A6.5 6.5 0 1 0 30 29.5V4Z"/>
+              </svg>
             </a>
           </div>
 

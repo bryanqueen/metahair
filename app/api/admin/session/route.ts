@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
-
-// In a real app, you'd store this in a database
-const ADMIN_PIN = "123456"
+import { connectDB } from "@/lib/db"
+import { AdminSettings } from "@/models/admin-settings"
 
 export async function GET() {
   try {
@@ -10,9 +9,14 @@ export async function GET() {
     const session = cookieStore.get('admin-session')
 
     if (session?.value === 'authenticated') {
+      await connectDB()
+      // Get admin settings from database
+      const adminSettings = await AdminSettings.findOne()
+      
       return NextResponse.json({ 
         authenticated: true, 
-        pin: ADMIN_PIN 
+        pin: adminSettings?.adminPin || "123456",
+        adminEmail: adminSettings?.adminEmail || "admin@metahair.com"
       })
     }
 
@@ -20,6 +24,7 @@ export async function GET() {
       authenticated: false 
     })
   } catch (error) {
+    console.error('Session check error:', error)
     return NextResponse.json({ 
       authenticated: false 
     })

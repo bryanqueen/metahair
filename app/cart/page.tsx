@@ -18,34 +18,10 @@ interface ShippingMethod {
 
 export default function CartPage() {
   const { cartItems, updateQuantity, removeItem } = useCart()
-  const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([])
-  const [selectedShipping, setSelectedShipping] = useState("")
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchShippingMethods = async () => {
-      try {
-        setLoading(true)
-        const response = await fetch('/api/shippping-methods')
-        const data = await response.json()
-        setShippingMethods(data)
-        if (data.length > 0) {
-          setSelectedShipping(data[0]._id)
-        }
-      } catch (error) {
-        console.error('Error fetching shipping methods:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchShippingMethods()
-  }, [])
+  const [loading, setLoading] = useState(false)
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const shippingPrice = shippingMethods.find((m) => m._id === selectedShipping)?.price || 0
-  const shipping = subtotal > 0 ? shippingPrice : 0
-  const total = subtotal + shipping
+  const total = subtotal
 
   // Don't show full-page loader - show page immediately
 
@@ -54,12 +30,7 @@ export default function CartPage() {
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-12">
-        {loading && (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A574] mx-auto mb-4"></div>
-            <p className="font-sans text-gray-600">Loading shipping options...</p>
-          </div>
-        )}
+        {loading && null}
         {/* Header */}
         <div className="mb-8 md:mb-12">
           <h1 className="font-serif text-3xl md:text-5xl mb-2 md:mb-4">Shopping Cart</h1>
@@ -111,36 +82,7 @@ export default function CartPage() {
                 ))}
               </div>
 
-              <div className="mt-8 pt-8 border-t border-gray-200">
-                <h2 className="font-serif text-xl mb-4">Shipping Method</h2>
-                <div className="space-y-3">
-                  {shippingMethods.map((method) => (
-                    <label
-                      key={method._id}
-                      className="flex items-center gap-3 p-4 border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
-                    >
-                      <input
-                        type="radio"
-                        name="shipping"
-                        value={method._id}
-                        checked={selectedShipping === method._id}
-                        onChange={(e) => setSelectedShipping(e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <div className="flex-1">
-                        <p className="font-sans font-medium">{method.name}</p>
-                        {method.description && (
-                          <p className="font-sans text-sm text-gray-600">{method.description}</p>
-                        )}
-                        {method.estimatedDays && (
-                          <p className="font-sans text-xs text-gray-500">Est. {method.estimatedDays} days</p>
-                        )}
-                      </div>
-                      <p className="font-sans font-semibold">₦{method.price.toLocaleString()}</p>
-                    </label>
-                  ))}
-                </div>
-              </div>
+              {/* Shipping selection moved to Checkout */}
             </div>
 
             {/* Order Summary */}
@@ -152,9 +94,9 @@ export default function CartPage() {
                     <span>Subtotal</span>
                     <span>₦{subtotal.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between font-sans">
+                  <div className="flex justify-between font-sans text-gray-600">
                     <span>Shipping</span>
-                    <span>₦{shipping.toLocaleString()}</span>
+                    <span>Calculated at checkout</span>
                   </div>
                 </div>
                 <div className="flex justify-between font-serif text-lg mb-6">
