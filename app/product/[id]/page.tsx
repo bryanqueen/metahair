@@ -359,7 +359,7 @@ export default function ProductPage() {
               </Button>
 
               <a
-                href={`https://wa.me/1234567890?text=${whatsappMessage}`}
+                href={`https://wa.me/2349121241724?text=${whatsappMessage}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full"
