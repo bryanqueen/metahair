@@ -4,6 +4,10 @@ import { Order } from "@/models/order"
 import { sendOrderConfirmation } from "@/lib/email"
 import { AdminSettings } from "@/models/admin-settings"
 import { Product } from "@/models/product"
+import mongoose, { HydratedDocument } from "mongoose"  // Add this import for types
+
+// Define Product interface for typing (add this at the top, or in a types file)
+interface ProductDocument extends HydratedDocument<{ images: string[]; /* add other fields if needed */ }> {}
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,6 +60,28 @@ export async function POST(request: NextRequest) {
       console.error('Stock reduction error:', e)
     }
 
+    // Populate items with product images (typed to fix TS error)
+    const populatedItems = await Promise.all(
+      (order.items as any[]).map(async (item: any) => {
+        if (item.productId) {
+          // Type the product query result
+          const product: Pick<ProductDocument, 'images'> | null = await Product.findById(item.productId).select("images").lean() as any
+          return {
+            productName: item.productName,
+            quantity: item.quantity,
+            price: item.price,
+            image: product?.images?.[0] || "",  // Now TS knows 'images' exists
+          }
+        }
+        return {
+          productName: item.productName,
+          quantity: item.quantity,
+          price: item.price,
+          image: "",  // Fallback if no productId
+        }
+      })
+    )
+
     // Send confirmation emails
     const settings = await AdminSettings.findOne()
     const adminEmail = settings?.adminEmail || process.env.ADMIN_EMAIL || "admin@metahair.com"
@@ -64,7 +90,7 @@ export async function POST(request: NextRequest) {
       orderNumber: order.orderNumber,
       customerName: order.customerName || customerName || "Customer",
       customerEmail: order.customerEmail || customerEmail,
-      items: (order.items as any[]).map((i: any) => ({ productName: i.productName, quantity: i.quantity, price: i.price, image: i.image })),
+      items: populatedItems,
       subtotal: order.subtotal,
       shippingCost: order.shippingCost,
       total: order.total,
@@ -78,5 +104,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, message: "Verification error" }, { status: 500 })
   }
 }
-
-

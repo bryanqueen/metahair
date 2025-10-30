@@ -23,12 +23,13 @@ interface OrderConfirmationEmailProps {
     name: string
     quantity: number
     price: number
-    images: string[]
+    image: string  // Single string
   }>
   subtotal: number
   shipping: number
   total: number
   shippingAddress: string
+  supportEmail?: string  // New prop
 }
 
 export const OrderConfirmationEmail = ({
@@ -40,6 +41,7 @@ export const OrderConfirmationEmail = ({
   shipping,
   total,
   shippingAddress,
+  supportEmail = "support@metahair.com",  // Default fallback
 }: OrderConfirmationEmailProps) => (
   <Html>
     <Head />
@@ -49,7 +51,7 @@ export const OrderConfirmationEmail = ({
         {/* Header */}
         <Section style={header}>
           <Img
-            src="https://metahair.vercel.app/metahair_logo_2.png"
+            src="https://metahair.vercel.app/metahair_logo_2.png"  // Use your real logo URL
             width="200"
             height="80"
             alt="METAHAIR"
@@ -75,13 +77,15 @@ export const OrderConfirmationEmail = ({
             {items.map((item, index) => (
               <Row key={index} style={itemRow}>
                 <Column style={itemImage}>
-                  <Img
-                    src={item.images[0]}
-                    width="80"
-                    height="80"
-                    alt={item.name}
-                    style={productImage}
-                  />
+                  {item.image && (  // Only render if image exists
+                    <Img
+                      src={item.image}
+                      width="80"
+                      height="80"
+                      alt={item.name}
+                      style={productImage}
+                    />
+                  )}
                 </Column>
                 <Column style={itemDetails}>
                   <Text style={itemName}>{item.name}</Text>
@@ -143,8 +147,8 @@ export const OrderConfirmationEmail = ({
           <Section style={contactSection}>
             <Text style={text}>
               Questions about your order? Contact us at{' '}
-              <Link href="mailto:support@metahair.com" style={link}>
-                support@metahair.com
+              <Link href={`mailto:${supportEmail}`} style={link}>
+                {supportEmail}
               </Link>
             </Text>
           </Section>
@@ -164,7 +168,7 @@ export const OrderConfirmationEmail = ({
   </Html>
 )
 
-// Styles
+// Styles (unchanged from your original)
 const main = {
   backgroundColor: '#f6f9fc',
   fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
