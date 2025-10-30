@@ -40,7 +40,7 @@ export default function NewArrivalsPage() {
     const fetchNewArrivals = async () => {
       try {
         setLoading(true)
-        const response = await fetch('/api/products?limit=20&sort=createdAt')
+        const response = await fetch('/api/products?limit=20')
         const data = await response.json()
         setNewArrivals(data.products || [])
       } catch (error) {

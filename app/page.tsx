@@ -53,6 +53,7 @@ export default async function Home() {
 
         // Fetch featured products
   const featuredData = await Product.find({ featured: true })
+    .sort({ createdAt: -1 })
     .limit(4)
     .populate("category", "name image")
     .lean()

@@ -10,14 +10,27 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category")
     const page = Number.parseInt(searchParams.get("page") || "1")
     const limit = Number.parseInt(searchParams.get("limit") || "12")
+    const sortParam = searchParams.get("sort") || "-createdAt"  // Default to newest first
 
     const query: any = {}
     if (category) {
       query.category = category
     }
 
+    // Parse sort option with explicit typing
+    let sortOptions: { [key: string]: 1 | -1 } = { createdAt: -1 }  // Default
+    if (sortParam) {
+      const field = sortParam.startsWith('-') ? sortParam.slice(1) : sortParam
+      const order: 1 | -1 = sortParam.startsWith('-') ? -1 : 1
+      sortOptions = { [field]: order }
+    }
+
     const skip = (page - 1) * limit
-    const products = await Product.find(query).skip(skip).limit(limit).populate("category")
+    const products = await Product.find(query)
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limit)
+      .populate("category")
     const total = await Product.countDocuments(query)
 
     return NextResponse.json({
