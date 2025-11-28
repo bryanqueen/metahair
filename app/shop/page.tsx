@@ -39,7 +39,7 @@ interface Category {
 
 // Data will be fetched from APIs
 
-const ITEMS_PER_PAGE = 4
+const ITEMS_PER_PAGE = 6
 
 function ShopContent() {
   const searchParams = useSearchParams()
@@ -51,6 +51,7 @@ function ShopContent() {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [totalPages, setTotalPages] = useState(1)
+  const [totalProducts, setTotalProducts] = useState(0)
   const [loading, setLoading] = useState(true)
   const { addToCart } = useCart()
 
@@ -75,6 +76,7 @@ function ShopContent() {
         const productsData = await productsResponse.json()
         setProducts(productsData.products || [])
         setTotalPages(productsData.pages || 1)
+        setTotalProducts(productsData.total || 0)
       } catch (error) {
         console.error('Error fetching data:', error)
       } finally {
@@ -88,6 +90,11 @@ function ShopContent() {
   useEffect(() => {
     setCurrentPage(1)
   }, [selectedCategory])
+
+  useEffect(() => {
+    // Scroll to top when page changes
+    window.scrollTo(0, 0)
+  }, [currentPage])
 
   const effectivePrice = (p: Product) => {
     if (p?.isOnSale) {
@@ -143,7 +150,7 @@ function ShopContent() {
             <div>
               <h1 className="font-serif text-2xl md:text-4xl lg:text-5xl">Shop All Wigs</h1>
               <p className="text-gray-600 font-sans text-xs md:text-sm">
-                Showing {products.length} {products.length === 1 ? "product" : "products"}
+                Showing {products.length} products out of {totalProducts}
               </p>
             </div>
           </div>
@@ -239,16 +246,24 @@ function ShopContent() {
                     >
                       Previous
                     </Button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <Button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        variant={currentPage === page ? "default" : "outline"}
-                        className={`font-sans text-xs md:text-sm ${currentPage === page ? "bg-black text-white" : ""}`}
-                      >
-                        {page}
-                      </Button>
-                    ))}
+                    {getPaginationRange(totalPages, currentPage).map((page, index) =>
+                      typeof page === 'number' ? (
+                        <Button
+                          key={`page-${page}`}
+                          onClick={() => setCurrentPage(page)}
+                          variant={currentPage === page ? "default" : "outline"}
+                          className={`font-sans text-xs md:text-sm ${
+                            currentPage === page ? "bg-black text-white" : ""
+                          }`}
+                        >
+                          {page}
+                        </Button>
+                      ) : (
+                        <span key={`ellipsis-${index}`} className="px-2 py-1 text-gray-500">
+                          ...
+                        </span>
+                      )
+                    )}
                     <Button
                       onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
@@ -278,6 +293,46 @@ function ShopContent() {
       <Footer />
     </div>
   )
+}
+
+function getPaginationRange(totalPages: number, currentPage: number): (number | '...')[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1)
+  }
+
+  // Always show first, last, current, and neighbors
+  const pages: (number | '...')[] = []
+  
+  // First page
+  pages.push(1)
+
+  // Ellipsis or pages before current
+  if (currentPage > 3) {
+    pages.push('...')
+  }
+
+  // Pages around current
+  for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+    if (!pages.includes(i)) {
+      pages.push(i)
+    }
+  }
+
+  // Ellipsis or pages after current
+  if (currentPage < totalPages - 2) {
+    if (!pages.includes('...')) {
+      pages.push('...')
+    } else if (pages[pages.length-1] !== '...') {
+      pages.push('...')
+    }
+  }
+
+  // Last page
+  if (!pages.includes(totalPages)) {
+    pages.push(totalPages)
+  }
+
+  return pages
 }
 
 export default function ShopPage() {
