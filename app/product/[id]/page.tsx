@@ -25,30 +25,36 @@ interface ProductPageProps {
   }>
 }
 
-// Revalidate the page every 60 seconds
-export const revalidate = 60
+// Use dynamic rendering for this page
 export const dynamic = 'force-dynamic'
 
 export default async function ProductPage(props: ProductPageProps) {
-  await connectDB()
+  try {
+    await connectDB()
+  } catch (error) {
+    console.error('Database connection failed:', error)
+    notFound()
+  }
 
   const params = await props.params
   const productId = params.id
 
   // Add a guard clause to check for valid ObjectId format
   if (!mongoose.Types.ObjectId.isValid(productId)) {
-    notFound();
+    console.error('Invalid ObjectId format:', productId)
+    notFound()
   }
 
   let product: IPopulatedProduct | null = null
   try {
     product = await Product.findById(productId).populate("category").lean() as unknown as IPopulatedProduct
   } catch (error) {
-    // This could still catch other DB errors, so we leave it.
+    console.error('Error fetching product:', error)
     notFound()
   }
 
   if (!product) {
+    console.error('Product not found:', productId)
     notFound()
   }
 
