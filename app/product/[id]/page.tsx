@@ -5,6 +5,19 @@ import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { ProductDetailsClient } from "./product-details-client"
 
+interface IPopulatedProduct {
+  _id: string;
+  name: string;
+  price: number;
+  description: string;
+  images: string[];
+  stock: number;
+  category: {
+    _id: string;
+    name: string;
+  };
+}
+
 interface ProductPageProps {
   params: {
     id: string
@@ -17,9 +30,9 @@ export const revalidate = 60
 export default async function ProductPage({ params }: ProductPageProps) {
   await connectDB()
 
-  let product = null
+  let product: IPopulatedProduct | null = null
   try {
-    product = await Product.findById(params.id).populate("category").lean()
+    product = await Product.findById(params.id).populate("category").lean() as IPopulatedProduct
   } catch (error) {
     // This can happen if the ID is not a valid MongoDB ObjectId
     notFound()
