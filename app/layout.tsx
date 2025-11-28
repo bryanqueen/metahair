@@ -6,6 +6,7 @@ import { Geist_Mono } from "next/font/google"
 import { Suspense } from "react"
 import { CartProvider } from "@/lib/cart-context"
 import { AdminProvider } from "@/lib/admin-context"
+import { TikTokPixel } from "@/components/tiktok-pixel"
 import "./globals.css"
 
 const playfair = Playfair_Display({
@@ -44,6 +45,7 @@ export default function RootLayout({
           </CartProvider>
         </AdminProvider>
         {/* <Analytics /> */}
+        <TikTokPixel />
       </body>
     </html>
   )
