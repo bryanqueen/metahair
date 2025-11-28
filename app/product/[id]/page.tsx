@@ -30,9 +30,11 @@ export const revalidate = 60
 export default async function ProductPage({ params }: ProductPageProps) {
   await connectDB()
 
+  const productId = params.id;
+
   let product: IPopulatedProduct | null = null
   try {
-    product = await Product.findById(params.id).populate("category").lean() as unknown as IPopulatedProduct
+    product = await Product.findById(productId).populate("category").lean() as unknown as IPopulatedProduct
   } catch (error) {
     // This can happen if the ID is not a valid MongoDB ObjectId
     notFound()
