@@ -29,10 +29,10 @@ interface ProductPageProps {
 export const revalidate = 60
 export const dynamic = 'force-dynamic'
 
-export default async function ProductPage({ params }: ProductPageProps) {
+export default async function ProductPage(props: ProductPageProps) {
   await connectDB()
 
-  const productId = params.id;
+  const productId = props.params.id;
 
   // Add a guard clause to check for valid ObjectId format
   if (!mongoose.Types.ObjectId.isValid(productId)) {
