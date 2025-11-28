@@ -20,9 +20,9 @@ interface IPopulatedProduct {
 }
 
 interface ProductPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 // Revalidate the page every 60 seconds
@@ -32,7 +32,8 @@ export const dynamic = 'force-dynamic'
 export default async function ProductPage(props: ProductPageProps) {
   await connectDB()
 
-  const productId = props.params.id;
+  const params = await props.params
+  const productId = params.id
 
   // Add a guard clause to check for valid ObjectId format
   if (!mongoose.Types.ObjectId.isValid(productId)) {
