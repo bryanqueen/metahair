@@ -1,5 +1,6 @@
 import { connectDB } from "@/lib/db"
 import { Product } from "@/models/product"
+import "@/models/category" // Import to register the Category model
 import { type NextRequest, NextResponse } from "next/server"
 
 export async function GET(request: NextRequest) {

@@ -116,6 +116,12 @@ export async function GET(request: NextRequest) {
 - Products have optional sale pricing (isOnSale, discountPercent, salePrice, saleStart, saleEnd)
 - Images array stores Cloudinary URLs
 - Always populate category when fetching products: `.populate("category")`
+- **CRITICAL**: When using `.populate()`, you must import the referenced model to register it:
+  ```typescript
+  import { Product } from "@/models/product"
+  import "@/models/category" // Required for .populate("category")
+  ```
+  Without this import, you'll get "MissingSchemaError: Schema hasn't been registered" in production
 
 ### Import Alias
 Path alias `@/*` maps to the root directory (configured in tsconfig.json)

@@ -1,6 +1,7 @@
 import { connectDB } from "@/lib/db"
 import mongoose from "mongoose"
 import { Product } from "@/models/product"
+import "@/models/category" // Import to register the Category model
 import { notFound } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
