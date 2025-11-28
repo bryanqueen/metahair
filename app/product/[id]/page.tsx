@@ -1,4 +1,5 @@
 import { connectDB } from "@/lib/db"
+import mongoose from "mongoose"
 import { Product } from "@/models/product"
 import { notFound } from "next/navigation"
 import { Navbar } from "@/components/navbar"
@@ -33,11 +34,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   const productId = params.id;
 
+  // Add a guard clause to check for valid ObjectId format
+  if (!mongoose.Types.ObjectId.isValid(productId)) {
+    notFound();
+  }
+
   let product: IPopulatedProduct | null = null
   try {
     product = await Product.findById(productId).populate("category").lean() as unknown as IPopulatedProduct
   } catch (error) {
-    // This can happen if the ID is not a valid MongoDB ObjectId
+    // This could still catch other DB errors, so we leave it.
     notFound()
   }
 
